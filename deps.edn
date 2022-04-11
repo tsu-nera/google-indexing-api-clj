@@ -1,0 +1,7 @@
+{:paths ["src" "resources"]
+ :deps
+ {org.clojure/clojure {:mvn/version "1.11.1"}
+  clj-http/clj-http   {:mvn/version "3.12.3"}
+
+  com.google.auth/google-auth-library-oauth2-http {:mvn/version "1.4.0"}
+  com.google.api-client/google-api-client         {:mvn/version "1.33.4"}}}
