@@ -7,12 +7,9 @@
     GoogleCredential)
    (com.google.api.client.http
     ByteArrayContent
-    GenericUrl
-    UrlEncodedContent)
+    GenericUrl)
    (com.google.api.client.http.javanet
-    NetHttpTransport)
-   (com.google.api.client.json.gson
-    GsonFactory)))
+    NetHttpTransport)))
 
 (def scopes "https://www.googleapis.com/auth/indexing")
 (def creds-path "credentials.json")
