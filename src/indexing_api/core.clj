@@ -45,8 +45,14 @@
       (.execute request))))
 
 (defn update! [url]
-  (let [content (make-content url type-updated)]
+  (let [content (make-content url type-updated)
+        message (str "update index: " url)]
+    (println message)
     (post content)))
+
+(defn update-bulk! [urls]
+  (doseq [url urls]
+    (do (update! url))))
 
 (defn delete! [url]
   (let [content (make-content url type-deleted)]
