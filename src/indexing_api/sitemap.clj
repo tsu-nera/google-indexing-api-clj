@@ -1,6 +1,7 @@
 (ns indexing-api.sitemap
   (:require
-   [clojure.java.io :as io]))
+   [clojure.java.io :as io]
+   [clojure.xml :as xml]))
 
 (defn load-xml [file-path]
   (-> file-path
