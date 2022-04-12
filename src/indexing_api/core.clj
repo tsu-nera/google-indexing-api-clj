@@ -1,26 +1,89 @@
 (ns indexing-api.core
   (:require
+   [cheshire.core :as json]
    [clojure.java.io :as io])
   (:import
-   (com.google.auth.oauth2
-    GoogleCredentials)))
+   (com.google.api.client.googleapis.auth.oauth2
+    GoogleCredential)
+   (com.google.api.client.http
+    ByteArrayContent
+    GenericUrl
+    UrlEncodedContent)
+   (com.google.api.client.http.javanet
+    NetHttpTransport)
+   (com.google.api.client.json.gson
+    GsonFactory)))
 
 (def scopes "https://www.googleapis.com/auth/indexing")
+(def creds-path "credentials.json")
 
 (def endpoint
   "https://indexing.googleapis.com/v3/urlNotifications:publish")
 
-(def creds-path "credentials.json")
+(def credentials
+  (delay (let [service-account (-> creds-path
+                                   io/resource
+                                   io/input-stream)]
+           (.createScoped
+            (GoogleCredential/fromStream service-account) [scopes]))))
 
-(def service-account
-  (-> creds-path
-      io/resource
-      io/input-stream))
-(def credentials (GoogleCredentials/fromStream service-account))
+(def type-updated "URL_UPDATED")
+(def type-deleted "URL_DELETED")
 
-(defn ->content-updated [url]
-  {:url  url
-   :type "URL_UPDATED"})
+(defn make-content [url type]
+  (let [content {:url  url
+                 :type type}]
+    (json/generate-string content)))
+
+(defn- post [content]
+  (let [http-transport  (NetHttpTransport.)
+        request-factory (.createRequestFactory http-transport)
+        generic-url     (GenericUrl. endpoint)
+        params          (ByteArrayContent/fromString
+                         "application/json" content)
+        request         (.buildPostRequest request-factory
+                                           generic-url params)]
+    (do
+      (.initialize @credentials request)
+      (.execute request))))
+
+(defn update! [url]
+  (let [content (make-content url type-updated)]
+    (post content)))
+
+(defn delete! [url]
+  (let [content (make-content url type-deleted)]
+    (post content)))
+
+(defn make-metadata-endpoint [url]
+  (str
+   "https://indexing.googleapis.com/v3/urlNotifications/metadata?url="
+   url))
+
+(defn get-status [url]
+  (let [endpoint        (make-metadata-endpoint url)
+        http-transport  (NetHttpTransport.)
+        request-factory (.createRequestFactory http-transport)
+        generic-url     (GenericUrl. endpoint)
+        request         (.buildGetRequest request-factory generic-url)]
+    (do
+      (.initialize @credentials request)
+      (-> (.execute request)
+          (.parseAsString)
+          (json/parse-string)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(comment
+  ;;;
+  (def sample-url "https://futurismo.biz/archives/3464/")
+
+  (def resp (update! sample-url))
+  (def statsu (.getStatusCode resp))
+
+  (def resp (get-status sample-url))
+  ;;;
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; https://developers.google.com/search/apis/indexing-api/v3/prereqs?hl=ja
