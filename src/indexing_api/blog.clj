@@ -52,15 +52,34 @@
 
 ;;;;;;;;;;;;;;;;;
 
+(def file-path "sitemap.xml")
+(def sitemap (sitemap/load-xml file-path))
+
+(defn sitemap->urls [sitemap]
+  (->> sitemap
+       (sitemap/->contents)
+       (->post-urls)
+       (into [])))
+
+(def urls (sitemap->urls sitemap))
+
 (comment
-  (tag-url? "https://futurismo.biz/tags/twitter/")
-  (category-url? "https://futurismo.biz/categories/tech/")
+  (def chunks (into [] (partition 50 urls)))
+
+  (count chunks)
+  (count (get chunks 0))
+
+  (api/update-bulk! (get chunks 6))
   )
 
-(comment
-  (def file-path "sitemap.xml")
-  (def sitemap (sitemap/load-xml file-path))
+;; batch request は諦めた.
+;; 1日のrequest制限が200らしいので複数日にわたって送信することにする.
+;;
+;; リクエスト制限でこうなる.
+;; 429 Too Many Requests POST https://indexing.googleapis.com/v3/urlNotifications:publish { "error" : { "code" : 429, "message" : "Quota exceeded for quota metric 'Publish requests' and limit 'Publish requests per day' of service 'indexing.googleapis.com' for consumer 'project_number:885789757693'.", "errors" : [ { "message" : "Quota exceeded for quota metric 'Publish requests' and limit 'Publish requests per day' of service 'indexing.googleapis.com' for consumer 'project_number:885789757693'.", "domain" : "global", "reason" : "rateLimitExceeded" } ], "status" : "RESOURCE_EXHAUSTED", "details" : [ { "@type" : "type.googleapis.com/google.rpc.ErrorInfo", "reason" : "RATE_LIMIT_EXCEEDED", "domain" : "googleapis.com", "metadata" : { "quota_limit" : "DefaultPublishRequestsPerDayPerProject", "consumer" : "projects/885789757693", "quota_metric" : "indexing.googleapis.com/v3_publish_requests", "service" : "indexing.googleapis.com" } } ] } }
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(comment
   (def contents (sitemap/->contents sitemap))
   (count contents)
 
@@ -68,21 +87,10 @@
   (count posts)
 
   (def post-urls (into [] (->post-urls contents)))
-
   (count post-urls)
   )
 
 (comment
-  (def chunks (into [] (partition 50 post-urls)))
-
-  (count chunks)
-  (count (get chunks 0))
-
-  (api/update-bulk! (get chunks 6))
-
-  ;; batch request は諦めた.
-  ;; 1日のrequest制限が200らしいので複数日にわたって送信することにする.
-  ;;
-  ;; リクエスト制限でこうなる.
-  ;; 429 Too Many Requests POST https://indexing.googleapis.com/v3/urlNotifications:publish { "error" : { "code" : 429, "message" : "Quota exceeded for quota metric 'Publish requests' and limit 'Publish requests per day' of service 'indexing.googleapis.com' for consumer 'project_number:885789757693'.", "errors" : [ { "message" : "Quota exceeded for quota metric 'Publish requests' and limit 'Publish requests per day' of service 'indexing.googleapis.com' for consumer 'project_number:885789757693'.", "domain" : "global", "reason" : "rateLimitExceeded" } ], "status" : "RESOURCE_EXHAUSTED", "details" : [ { "@type" : "type.googleapis.com/google.rpc.ErrorInfo", "reason" : "RATE_LIMIT_EXCEEDED", "domain" : "googleapis.com", "metadata" : { "quota_limit" : "DefaultPublishRequestsPerDayPerProject", "consumer" : "projects/885789757693", "quota_metric" : "indexing.googleapis.com/v3_publish_requests", "service" : "indexing.googleapis.com" } } ] } }
+  (tag-url? "https://futurismo.biz/tags/twitter/")
+  (category-url? "https://futurismo.biz/categories/tech/")
   )
