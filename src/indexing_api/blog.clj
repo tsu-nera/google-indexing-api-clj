@@ -50,16 +50,25 @@
        (filter post?)
        (map :url)))
 
-;;;;;;;;;;;;;;;;;
+(defn- ->last-unixtime [page]
+  (if-let [lastmod (:lastmod page)]
+    (.getTime (clojure.instant/read-instant-timestamp lastmod))
+    0))
 
-(def file-path "sitemap.xml")
-(def sitemap (sitemap/load-xml file-path))
+(defn sort-by-lastmod [pages]
+  (sort #(compare (->last-unixtime %2) (->last-unixtime %1)) pages))
 
 (defn sitemap->urls [sitemap]
   (->> sitemap
        (sitemap/->contents)
-       (->post-urls)
+       sort-by-lastmod
        (into [])))
+
+;;;;;;;;;;;;;;;;;
+
+#_(def file-path "sitemap.xml")
+(def file-path "sitemap.xml")
+(def sitemap (sitemap/load-xml file-path))
 
 (def urls (sitemap->urls sitemap))
 
@@ -67,9 +76,9 @@
   (def chunks (into [] (partition 50 urls)))
 
   (count chunks)
-  (count (get chunks 0))
+  (count (get chunks 2))
 
-  (api/update-bulk! (get chunks 6))
+  (api/update-bulk! (get chunks 0))
   )
 
 ;; batch request は諦めた.
